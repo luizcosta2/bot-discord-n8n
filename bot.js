@@ -31,6 +31,7 @@ client.once('clientReady', () => {
 client.on('messageCreate', async (message) => {
   try {
     if (message.author.bot) return;
+    if (!message.guild) return;
 
     if (!message.mentions.has(client.user)) return;
 
@@ -46,8 +47,12 @@ client.on('messageCreate', async (message) => {
     const resposta = await axios.post(process.env.N8N_WEBHOOK_URL, {
       user_id: message.author.id,
       user: message.author.username,
+      display_name: message.member?.displayName || message.author.username,
       content: pergunta,
+      guild_id: message.guild.id,
+      guild_name: message.guild.name,
       channel_id: message.channel.id,
+      channel_name: message.channel.name,
       message_id: message.id
     });
 
@@ -57,7 +62,11 @@ client.on('messageCreate', async (message) => {
       resposta.data.text ||
       'Sem resposta da IA.';
 
-    await message.reply(texto);
+    const respostaFinal = String(texto).length > 1900
+      ? String(texto).slice(0, 1900) + '\n\n[Resposta cortada por limite do Discord]'
+      : String(texto);
+
+    await message.reply(respostaFinal);
 
   } catch (err) {
     console.error('Erro:', err.response?.data || err.message);
